@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS public.teams (
 
 -- 2. MATCHES TABLE
 CREATE TABLE IF NOT EXISTS public.matches (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id VARCHAR(50) PRIMARY KEY DEFAULT gen_random_uuid()::text,
     team_a_id VARCHAR(50) REFERENCES public.teams(id) ON DELETE CASCADE,
     team_b_id VARCHAR(50) REFERENCES public.teams(id) ON DELETE CASCADE,
     team_a_score INT DEFAULT 0,
@@ -36,7 +36,7 @@ CREATE INDEX IF NOT EXISTS idx_matches_start_time ON public.matches(start_time);
 -- 3. STREAMS TABLE
 CREATE TABLE IF NOT EXISTS public.streams (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    match_id UUID REFERENCES public.matches(id) ON DELETE CASCADE,
+    match_id VARCHAR(50) REFERENCES public.matches(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     primary_url TEXT NOT NULL,
     backup_url_1 TEXT,
@@ -55,7 +55,7 @@ CREATE INDEX IF NOT EXISTS idx_streams_match_id ON public.streams(match_id);
 -- 4. MATCH EVENTS TABLE
 CREATE TABLE IF NOT EXISTS public.match_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    match_id UUID REFERENCES public.matches(id) ON DELETE CASCADE,
+    match_id VARCHAR(50) REFERENCES public.matches(id) ON DELETE CASCADE,
     team_id VARCHAR(50) REFERENCES public.teams(id) ON DELETE CASCADE, -- Nullable for neutral events
     type VARCHAR(20) NOT NULL CHECK (type IN ('GOAL', 'PENALTY', 'OWN_GOAL', 'VAR', 'YELLOW_CARD', 'RED_CARD', 'SUBSTITUTION', 'MATCH_START', 'MATCH_END')),
     minute INT NOT NULL,
@@ -70,7 +70,7 @@ CREATE INDEX IF NOT EXISTS idx_match_events_match_id ON public.match_events(matc
 
 -- 5. SCORE UPDATES (STATS) TABLE
 CREATE TABLE IF NOT EXISTS public.score_updates (
-    match_id UUID PRIMARY KEY REFERENCES public.matches(id) ON DELETE CASCADE,
+    match_id VARCHAR(50) PRIMARY KEY REFERENCES public.matches(id) ON DELETE CASCADE,
     possession_a INT DEFAULT 50 CHECK (possession_a BETWEEN 0 AND 100),
     possession_b INT DEFAULT 50 CHECK (possession_b BETWEEN 0 AND 100),
     shots_a INT DEFAULT 0,
@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS public.notifications (
     title TEXT NOT NULL,
     message TEXT NOT NULL,
     category VARCHAR(30) NOT NULL CHECK (category IN ('GOAL_ALERT', 'MATCH_STARTED', 'MATCH_FINISHED', 'FEATURE_UPDATE', 'ANNOUNCEMENT')),
-    match_id UUID REFERENCES public.matches(id) ON DELETE SET NULL,
+    match_id VARCHAR(50) REFERENCES public.matches(id) ON DELETE SET NULL,
     sent_at TIMESTAMPTZ,
     status VARCHAR(20) DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'SENT')),
     created_at TIMESTAMPTZ DEFAULT now()
