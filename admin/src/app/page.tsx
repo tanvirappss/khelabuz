@@ -116,6 +116,11 @@ export default function WebUserFrontend() {
           console.error(e);
         }
       }
+
+      // Auto-sync local modifications to Supabase if running on localhost
+      import('@/lib/supabase').then(({ syncLocalStorageToSupabase }) => {
+        syncLocalStorageToSupabase();
+      });
     }
   }, []);
 

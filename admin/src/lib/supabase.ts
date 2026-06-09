@@ -471,3 +471,98 @@ export function getWc2026GroupMatches() {
   matches.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
   return matches;
 }
+
+export async function syncLocalStorageToSupabase() {
+  if (typeof window === 'undefined' || window.location.hostname !== 'localhost') return;
+  if (isMockEnabled) return;
+  
+  const { supabase } = await import('@/lib/supabase');
+  if (!supabase) return;
+
+  console.log("Checking for local modifications to sync with Supabase...");
+
+  try {
+    // 1. Sync Teams
+    const localTeams = localStorage.getItem('wc_teams');
+    if (localTeams) {
+      const teams = JSON.parse(localTeams);
+      if (Array.isArray(teams) && teams.length > 0) {
+        console.log(`Syncing ${teams.length} teams...`);
+        for (const team of teams) {
+          await supabase.from('teams').upsert({
+            id: team.id,
+            name: team.name,
+            code: team.code,
+            flag_url: team.flag_url,
+            primary_color: team.primary_color,
+            secondary_color: team.secondary_color
+          });
+        }
+      }
+    }
+
+    // 2. Sync Matches
+    const localMatches = localStorage.getItem('wc_matches');
+    if (localMatches) {
+      const matches = JSON.parse(localMatches);
+      if (Array.isArray(matches) && matches.length > 0) {
+        console.log(`Syncing ${matches.length} matches...`);
+        for (const match of matches) {
+          await supabase.from('matches').upsert({
+            id: match.id,
+            team_a_id: match.team_a_id,
+            team_b_id: match.team_b_id,
+            team_a_score: match.team_a_score,
+            team_b_score: match.team_b_score,
+            status: match.status,
+            tournament: match.tournament,
+            stadium: match.stadium,
+            start_time: match.start_time
+          });
+        }
+      }
+    }
+
+    // 3. Sync Streams
+    const localStreams = localStorage.getItem('wc_streams');
+    if (localStreams) {
+      const streams = JSON.parse(localStreams);
+      if (Array.isArray(streams) && streams.length > 0) {
+        console.log(`Syncing ${streams.length} streams...`);
+        for (const stream of streams) {
+          await supabase.from('streams').upsert({
+            id: stream.id,
+            match_id: stream.match_id,
+            name: stream.name,
+            primary_url: stream.primary_url,
+            backup_url_1: stream.backup_url_1,
+            backup_url_2: stream.backup_url_2,
+            backup_url_3: stream.backup_url_3,
+            is_enabled: stream.is_enabled,
+            is_m3u: stream.is_m3u || false
+          });
+        }
+      }
+    }
+
+    // 4. Sync Settings
+    const localSettings = localStorage.getItem('wc_site_settings');
+    if (localSettings) {
+      const settings = JSON.parse(localSettings);
+      if (settings && typeof settings === 'object') {
+        console.log("Syncing site settings...");
+        await supabase.from('site_settings').upsert({
+          id: 1,
+          header_logo: settings.header_logo,
+          header_title: settings.header_title,
+          header_subtitle: settings.header_subtitle,
+          ticker_text: settings.ticker_text
+        });
+      }
+    }
+
+    console.log("Local modifications synced with Supabase successfully!");
+  } catch (e) {
+    console.error("Failed to sync local storage modifications to Supabase:", e);
+  }
+}

@@ -38,6 +38,9 @@ export default function LoginPage() {
             password,
           });
           if (authError) throw authError;
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('wc_admin_logged_in', 'true');
+          }
           router.push('/admin/dashboard');
         }
       }
