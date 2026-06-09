@@ -183,6 +183,18 @@ export default function StreamManagerPage() {
                       <p className="font-mono text-slate-400 truncate bg-slate-950/20 border border-slate-900 px-3 py-2 rounded-xl">{stream.backup_url_1}</p>
                     </div>
                   )}
+                  {stream.backup_url_2 && (
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-500 block">Backup URL 2</span>
+                      <p className="font-mono text-slate-400 truncate bg-slate-950/20 border border-slate-900 px-3 py-2 rounded-xl">{stream.backup_url_2}</p>
+                    </div>
+                  )}
+                  {stream.backup_url_3 && (
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-500 block">Backup URL 3</span>
+                      <p className="font-mono text-slate-400 truncate bg-slate-950/20 border border-slate-900 px-3 py-2 rounded-xl">{stream.backup_url_3}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -228,6 +240,14 @@ export default function StreamManagerPage() {
               <div className="space-y-1">
                 <label className="text-xs text-slate-400 font-bold">Backup 1</label>
                 <input type="url" value={backupUrl1} onChange={(e) => setBackupUrl1(e.target.value)} placeholder="https://..." className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2.5 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400 font-bold">Backup 2</label>
+                <input type="url" value={backupUrl2} onChange={(e) => setBackupUrl2(e.target.value)} placeholder="https://..." className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2.5 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400 font-bold">Backup 3</label>
+                <input type="url" value={backupUrl3} onChange={(e) => setBackupUrl3(e.target.value)} placeholder="https://..." className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2.5 text-sm" />
               </div>
               <div className="flex items-center gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-850">
                 <input type="checkbox" id="isM3u" checked={isM3u} onChange={(e) => setIsM3u(e.target.checked)} className="w-4 h-4 accent-emerald-500" />

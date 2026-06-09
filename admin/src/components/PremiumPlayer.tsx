@@ -42,15 +42,9 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
       hlsRef.current = null;
     }
 
-    const isHls = url.includes('.m3u8') || url.includes('m3u8');
+    const isTs = url.includes('.ts') || url.endsWith('.ts');
+    const isHls = (url.includes('.m3u8') || url.includes('m3u8') || (!url.includes('.mp4') && !url.includes('.webm') && !url.includes('.ogg'))) && !isTs;
     const isHttpOnHttps = typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('http://');
-
-    if (isHttpOnHttps) {
-      setHasError(true);
-      setErrorMessage('Mixed Content Warning: This stream uses an unsecure HTTP connection. Browsers block HTTP streams on secure websites. Allow mixed content in your browser settings or use an HTTPS stream.');
-      setIsBuffering(false);
-      return;
-    }
 
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = url;
@@ -88,7 +82,10 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
                   break;
                 default:
                   setHasError(true);
-                  setErrorMessage('Playback Error: Cannot parse or play this stream. Verify the channel URL is active.');
+                  setErrorMessage(isHttpOnHttps 
+                    ? 'Mixed Content Error: Browser blocked this unsecure HTTP stream on a secure HTTPS website. Try the "Play in VLC" or "Open Directly" buttons below.'
+                    : 'Playback Error: Unable to parse or play this stream. The URL might be offline, invalid, or blocked by CORS security headers.'
+                  );
                   hls.destroy();
                   break;
               }
@@ -111,7 +108,10 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
     const handleCanPlay = () => setIsBuffering(false);
     const handleError = () => {
       setHasError(true);
-      setErrorMessage('Streaming Error: Channel link is offline or unreachable.');
+      setErrorMessage(isHttpOnHttps 
+        ? 'Mixed Content Error: Browser blocked this unsecure HTTP stream on a secure HTTPS website. Try the "Play in VLC" or "Open Directly" buttons below.'
+        : 'Streaming Error: The stream is offline, unreachable, or blocked by CORS security headers. Try using another link or click below to play externally.'
+      );
       setIsBuffering(false);
     };
 
@@ -257,13 +257,29 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
           </div>
           <h4 className="text-white font-extrabold text-sm uppercase tracking-wider mb-2">Failed to Play Stream</h4>
           <p className="text-xs text-slate-400 max-w-sm leading-relaxed mb-4">{errorMessage}</p>
-          <button 
-            type="button"
-            onClick={handleReload}
-            className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-xs font-black rounded-lg hover:from-emerald-400 hover:to-teal-400 transition-all cursor-pointer"
-          >
-            Retry Loading Stream
-          </button>
+          <div className="flex flex-wrap gap-2.5 justify-center mt-2">
+            <button 
+              type="button"
+              onClick={handleReload}
+              className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-xs font-black rounded-lg hover:from-emerald-400 hover:to-teal-400 transition-all cursor-pointer"
+            >
+              Retry
+            </button>
+            <a 
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-slate-900 border border-slate-800 text-white text-xs font-black rounded-lg hover:bg-slate-800 hover:border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              Open Directly ↗
+            </a>
+            <a 
+              href={`vlc://${url}`}
+              className="px-4 py-2 bg-slate-900 border border-slate-800 text-amber-400 text-xs font-black rounded-lg hover:bg-slate-800 hover:border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              Play in VLC 🧡
+            </a>
+          </div>
         </div>
       )}
 

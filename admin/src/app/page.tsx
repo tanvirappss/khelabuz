@@ -66,6 +66,8 @@ export default function WebUserFrontend() {
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
   const [detailsTab, setDetailsTab] = useState(0); // 0: Timeline, 1: Stats
+  const [matchStreams, setMatchStreams] = useState<any[]>([]);
+  const [activeStream, setActiveStream] = useState<any>(null);
 
   // Fetch site settings
   const { data: settings = { header_logo: '', header_title: 'World Cup 2026', header_subtitle: 'Live Platform', ticker_text: '' } } = useQuery({
@@ -326,13 +328,18 @@ export default function WebUserFrontend() {
           streamsList = data || [];
         }
       }
+      setMatchStreams(streamsList);
       if (streamsList.length > 0) {
+        setActiveStream(streamsList[0]);
         setActiveStreamUrl(streamsList[0].primary_url);
       } else {
+        setActiveStream(null);
         setActiveStreamUrl('');
       }
     } catch (e) {
       console.error(e);
+      setMatchStreams([]);
+      setActiveStream(null);
       setActiveStreamUrl('');
     }
   };
@@ -776,6 +783,42 @@ export default function WebUserFrontend() {
                         />
                       )}
                     </div>
+
+                    {/* Stream links switcher */}
+                    {selectedMatch && matchStreams.length > 0 && (
+                      <div className="mt-3.5 p-3.5 bg-slate-950/60 border border-slate-900 rounded-2xl space-y-2">
+                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">
+                          📺 Select Stream Link:
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {matchStreams.map((stream: any, streamIdx: number) => {
+                            const links = [
+                              { name: stream.name || `Link ${streamIdx + 1}`, url: stream.primary_url },
+                              stream.backup_url_1 ? { name: `${stream.name || `Link ${streamIdx + 1}`} B1`, url: stream.backup_url_1 } : null,
+                              stream.backup_url_2 ? { name: `${stream.name || `Link ${streamIdx + 1}`} B2`, url: stream.backup_url_2 } : null,
+                              stream.backup_url_3 ? { name: `${stream.name || `Link ${streamIdx + 1}`} B3`, url: stream.backup_url_3 } : null,
+                            ].filter(Boolean) as { name: string; url: string }[];
+
+                            return links.map((link, linkIdx) => {
+                              const isActive = activeStreamUrl === link.url;
+                              return (
+                                <button
+                                  key={`${stream.id}-${linkIdx}`}
+                                  onClick={() => setActiveStreamUrl(link.url)}
+                                  className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer border ${
+                                    isActive
+                                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 border-transparent shadow shadow-emerald-500/10'
+                                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                                  }`}
+                                >
+                                  {link.name}
+                                </button>
+                              );
+                            });
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
