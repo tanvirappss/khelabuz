@@ -355,7 +355,7 @@ export function getWc2026GroupMatches() {
     { id: 'E', name: 'Group E', teams: ['t-ger', 't-cuw', 't-civ', 't-ecu'], venues: ['Hard Rock Stadium, Miami', 'Mercedes-Benz Stadium, Atlanta', 'NRG Stadium, Houston'] },
     { id: 'F', name: 'Group F', teams: ['t-ned', 't-jpn', 't-swe', 't-tun'], venues: ['AT&T Stadium, Dallas', 'Arrowhead Stadium, Kansas City', 'NRG Stadium, Houston'] },
     { id: 'G', name: 'Group G', teams: ['t-bel', 't-egy', 't-irn', 't-nzl'], venues: ['Lincoln Financial Field, Philadelphia', 'Gillette Stadium, Foxborough', 'MetLife Stadium, East Rutherford'] },
-    { id: 'H', name: 'Group H', teams: ['t-esp', 't-cpv', 't-ksa', 't-uru'], venues: ['Hard Rock Stadium, Miami', 'Mercedes-Benz Stadium, Atlanta', 'NRG Stadium, Houston'] },
+    { id: 'H', name: 'Group H', teams: ['t-esp', 't-cpv', 't-sau', 't-uru'], venues: ['Hard Rock Stadium, Miami', 'Mercedes-Benz Stadium, Atlanta', 'NRG Stadium, Houston'] },
     { id: 'I', name: 'Group I', teams: ['t-fra', 't-sen', 't-irq', 't-nor'], venues: ['MetLife Stadium, East Rutherford', 'Gillette Stadium, Foxborough', 'Lincoln Financial Field, Philadelphia', 'BMO Field, Toronto'] },
     { id: 'J', name: 'Group J', teams: ['t-arg', 't-alg', 't-aut', 't-jor'], venues: ['MetLife Stadium, East Rutherford', 'AT&T Stadium, Dallas', 'Lincoln Financial Field, Philadelphia'] },
     { id: 'K', name: 'Group K', teams: ['t-por', 't-cod', 't-uzb', 't-col'], venues: ['Arrowhead Stadium, Kansas City', 'Levi\'s Stadium, San Francisco', 'SoFi Stadium, Los Angeles'] },
