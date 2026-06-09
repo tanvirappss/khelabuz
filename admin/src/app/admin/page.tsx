@@ -7,34 +7,27 @@ import { isMockEnabled } from '@/lib/supabase';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
+ 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
+ 
     try {
-      let loginEmail = email;
-      if (!email.includes('@')) {
-        loginEmail = `${email}@khelabuz.com`;
-      }
-
+      const loginEmail = '823163@khelabuz.com';
+ 
       if (isMockEnabled) {
         // Local sandbox mode
-        if (
-          (email === 'admin@worldcup.com' || email === 'admin' || email === '823163') && 
-          (password === 'admin123' || password === 'admin' || password === '823163')
-        ) {
+        if (password === '823163' || password === 'admin123') {
           if (typeof window !== 'undefined') {
             localStorage.setItem('wc_admin_logged_in', 'true');
           }
           router.push('/admin/dashboard');
         } else {
-          setError('Invalid credentials. Hint: Use 823163 / 823163');
+          setError('Invalid password. Hint: Use 823163');
         }
       } else {
         // Real Supabase Auth
@@ -86,25 +79,6 @@ export default function LoginPage() {
 
           <div className="space-y-2">
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block">
-              Admin Username / Email
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
-                <User className="w-5 h-5" />
-              </span>
-              <input
-                type="text"
-                placeholder="823163"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full pl-11 pr-4 py-3 bg-slate-950/50 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl text-white placeholder-slate-600 outline-none transition-all"
-              />
-            </div>
-          </div>
- 
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block">
               Password
             </label>
             <div className="relative">
@@ -134,7 +108,7 @@ export default function LoginPage() {
         {isMockEnabled && (
           <div className="mt-6 border-t border-slate-800/80 pt-4 text-center">
             <p className="text-xs text-slate-500">
-              Demo: <span className="font-semibold text-slate-400">823163</span> / <span className="font-semibold text-slate-400">823163</span>
+              Demo Password: <span className="font-semibold text-slate-400">823163</span>
             </p>
           </div>
         )}
