@@ -13,7 +13,7 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
   const containerRef = useRef<HTMLDivElement>(null);
   
   const [isPlaying, setIsPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const [volume, setVolume] = useState(1);
   const [isBuffering, setIsBuffering] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -46,15 +46,42 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
     const isHls = (url.includes('.m3u8') || url.includes('m3u8') || (!url.includes('.mp4') && !url.includes('.webm') && !url.includes('.ogg'))) && !isTs;
     const isHttpOnHttps = typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('http://');
 
+    const attemptPlay = () => {
+      if (!video) return;
+      video.play().catch((err) => {
+        console.warn("Autoplay blocked. Muting and retrying...", err);
+        video.muted = true;
+        setIsMuted(true);
+        video.play().catch((playErr) => {
+          console.error("Muted autoplay failed:", playErr);
+        });
+      });
+    };
+
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = url;
+      attemptPlay();
     } else if (isHls) {
       import('hls.js').then((Hls) => {
         if (Hls.default.isSupported()) {
           hls = new Hls.default({
             enableWorker: true,
             lowLatencyMode: true,
-            backBufferLength: 90
+            backBufferLength: 0, // Disable backbuffer to save memory
+            maxBufferLength: 3,  // Buffer only 3 seconds (very fast download)
+            maxMaxBufferLength: 5,
+            maxBufferSize: 2 * 1024 * 1024, // Keep buffer small (2MB) for instant startup
+            liveSyncDurationCount: 1, // Play after ONLY 1 segment is loaded (Crucial for instant play!)
+            liveMaxLatencyDurationCount: 2,
+            maxFragLookUpTolerance: 0.1,
+            manifestLoadingMaxRetry: 10,
+            manifestLoadingRetryDelay: 500,
+            levelLoadingMaxRetry: 10,
+            levelLoadingRetryDelay: 500,
+            fragLoadingMaxRetry: 10,
+            fragLoadingRetryDelay: 500,
+            stretchShortVideoTrack: true,
+            progressive: true
           });
           hlsRef.current = hls;
           hls.loadSource(url);
@@ -67,6 +94,7 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
               const qualities = ['Auto', ...levels.map((l: any) => l.height + 'p')];
               setAvailableQualities(qualities);
             }
+            attemptPlay();
           });
 
           hls.on(Hls.default.Events.ERROR, (event: any, data: any) => {
@@ -93,10 +121,12 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
           });
         } else {
           video.src = url;
+          attemptPlay();
         }
       });
     } else {
       video.src = url;
+      attemptPlay();
     }
 
     // Event listeners
@@ -105,7 +135,10 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
       setIsBuffering(false);
       setIsPlaying(true);
     };
-    const handleCanPlay = () => setIsBuffering(false);
+    const handleCanPlay = () => {
+      setIsBuffering(false);
+      attemptPlay();
+    };
     const handleError = () => {
       setHasError(true);
       setErrorMessage(isHttpOnHttps 
@@ -232,8 +265,19 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
         onClick={togglePlay}
         autoPlay
         playsInline
+        muted={isMuted}
         className="w-full h-full object-contain cursor-pointer"
       />
+
+      {/* FLOATING UNMUTE BADGE */}
+      {isMuted && isPlaying && !hasError && (
+        <button
+          onClick={toggleMute}
+          className="absolute top-4 left-4 z-20 px-3.5 py-2 bg-black/70 hover:bg-black/90 backdrop-blur-md border border-slate-800 rounded-xl text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-lg pointer-events-auto cursor-pointer animate-pulse"
+        >
+          🔇 Click to Unmute
+        </button>
+      )}
 
       {/* GLOWING AMBIENT LIGHT */}
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,_transparent_40%,_rgba(0,0,0,0.4)_100%)]" />
