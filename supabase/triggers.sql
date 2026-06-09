@@ -35,8 +35,8 @@ CREATE OR REPLACE TRIGGER tr_init_match_score_stats
 CREATE OR REPLACE FUNCTION public.fn_update_match_score_on_event()
 RETURNS TRIGGER AS $$
 DECLARE
-    v_team_a_id UUID;
-    v_team_b_id UUID;
+    v_team_a_id VARCHAR(50);
+    v_team_b_id VARCHAR(50);
 BEGIN
     -- Get team IDs for the match
     SELECT team_a_id, team_b_id INTO v_team_a_id, v_team_b_id

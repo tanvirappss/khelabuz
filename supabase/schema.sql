@@ -5,7 +5,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 1. TEAMS TABLE
 CREATE TABLE IF NOT EXISTS public.teams (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id VARCHAR(50) PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     code VARCHAR(3) NOT NULL UNIQUE,
     flag_url TEXT NOT NULL,
@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS public.teams (
 -- 2. MATCHES TABLE
 CREATE TABLE IF NOT EXISTS public.matches (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    team_a_id UUID REFERENCES public.teams(id) ON DELETE CASCADE,
-    team_b_id UUID REFERENCES public.teams(id) ON DELETE CASCADE,
+    team_a_id VARCHAR(50) REFERENCES public.teams(id) ON DELETE CASCADE,
+    team_b_id VARCHAR(50) REFERENCES public.teams(id) ON DELETE CASCADE,
     team_a_score INT DEFAULT 0,
     team_b_score INT DEFAULT 0,
     status VARCHAR(20) NOT NULL CHECK (status IN ('UPCOMING', 'LIVE', 'FINISHED')),
@@ -56,7 +56,7 @@ CREATE INDEX IF NOT EXISTS idx_streams_match_id ON public.streams(match_id);
 CREATE TABLE IF NOT EXISTS public.match_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     match_id UUID REFERENCES public.matches(id) ON DELETE CASCADE,
-    team_id UUID REFERENCES public.teams(id) ON DELETE CASCADE, -- Nullable for neutral events
+    team_id VARCHAR(50) REFERENCES public.teams(id) ON DELETE CASCADE, -- Nullable for neutral events
     type VARCHAR(20) NOT NULL CHECK (type IN ('GOAL', 'PENALTY', 'OWN_GOAL', 'VAR', 'YELLOW_CARD', 'RED_CARD', 'SUBSTITUTION', 'MATCH_START', 'MATCH_END')),
     minute INT NOT NULL,
     extra_minute INT,
