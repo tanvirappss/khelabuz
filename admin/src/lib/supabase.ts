@@ -1,59 +1,6 @@
 // Supabase Client wrapper with Mock Fallback for local preview & offline capability
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pfovxkppiygtenkbsmlc.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmb3Z4a3BwaXlndGVua2JzbWxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODc1OTAsImV4cCI6MjA5NjU2MzU5MH0.iDXhN5FSxIeAV8JyeFh4FQlg_nF85z42oNPRsBgMgqY';
-
-export const isMockEnabled = !supabaseUrl || !supabaseAnonKey;
-
-export const supabase = isMockEnabled 
-  ? null 
-  : createClient(supabaseUrl, supabaseAnonKey);
-
-// Force clear old local storage mock databases to ensure the new 48-team database and live matches load correctly
-if (typeof window !== 'undefined') {
-  try {
-    const storedTeamsStr = localStorage.getItem('wc_teams');
-    if (storedTeamsStr) {
-      const parsed = JSON.parse(storedTeamsStr);
-      if (Array.isArray(parsed) && parsed.length < 40) {
-        localStorage.removeItem('wc_teams');
-        localStorage.removeItem('wc_matches');
-        localStorage.removeItem('wc_streams');
-        localStorage.removeItem('wc_stats');
-        localStorage.removeItem('wc_events');
-        localStorage.removeItem('wc_providers');
-        localStorage.removeItem('wc_ads');
-        localStorage.removeItem('wc_notifications');
-        localStorage.removeItem('wc_db_version');
-      }
-    }
-  } catch (e) {
-    console.error('Failed to parse or clean mock db cache:', e);
-  }
-}
-
-const getStorageItem = (key: string, defaultValue: any) => {
-  if (typeof window === 'undefined') return defaultValue;
-  const item = localStorage.getItem(key);
-  if (!item) {
-    localStorage.setItem(key, JSON.stringify(defaultValue));
-    return defaultValue;
-  }
-  try {
-    return JSON.parse(item);
-  } catch {
-    return defaultValue;
-  }
-};
-
-const setStorageItem = (key: string, value: any) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(key, JSON.stringify(value));
-    window.dispatchEvent(new Event('storage'));
-  }
-};
-
 // 48 FIFA World Cup 2026 Nations (with codes and flag CDN links)
 const initialTeams = [
   // North America (Hosts & Qualifiers)
@@ -121,6 +68,97 @@ const initialTeams = [
   { id: 't-uzb', name: 'Uzbekistan', code: 'UZB', flag_url: 'https://flagcdn.com/w320/uz.png', primary_color: '#00A598', secondary_color: '#FFFFFF' },
   { id: 't-pan', name: 'Panama', code: 'PAN', flag_url: 'https://flagcdn.com/w320/pa.png', primary_color: '#DA121A', secondary_color: '#072357' }
 ];
+
+export const newQualifiedTeams = [
+  { id: 't-cze', name: 'Czechia', code: 'CZE', flag_url: 'https://flagcdn.com/w320/cz.png', primary_color: '#11457E', secondary_color: '#D7141A' },
+  { id: 't-bih', name: 'Bosnia and Herzegovina', code: 'BIH', flag_url: 'https://flagcdn.com/w320/ba.png', primary_color: '#002F6C', secondary_color: '#FEC524' },
+  { id: 't-hai', name: 'Haiti', code: 'HAI', flag_url: 'https://flagcdn.com/w320/ht.png', primary_color: '#00209F', secondary_color: '#D21034' },
+  { id: 't-cuw', name: 'Curaçao', code: 'CUW', flag_url: 'https://flagcdn.com/w320/cw.png', primary_color: '#002B7F', secondary_color: '#F9E814' },
+  { id: 't-tun', name: 'Tunisia', code: 'TUN', flag_url: 'https://flagcdn.com/w320/tn.png', primary_color: '#E70013', secondary_color: '#FFFFFF' },
+  { id: 't-cpv', name: 'Cape Verde', code: 'CPV', flag_url: 'https://flagcdn.com/w320/cv.png', primary_color: '#002A8F', secondary_color: '#D21034' },
+  { id: 't-irq', name: 'Iraq', code: 'IRQ', flag_url: 'https://flagcdn.com/w320/iq.png', primary_color: '#C8102E', secondary_color: '#007A33' },
+  { id: 't-jor', name: 'Jordan', code: 'JOR', flag_url: 'https://flagcdn.com/w320/jo.png', primary_color: '#007A33', secondary_color: '#C8102E' },
+  { id: 't-cod', name: 'DR Congo', code: 'COD', flag_url: 'https://flagcdn.com/w320/cd.png', primary_color: '#007FFF', secondary_color: '#F9D616' },
+  { id: 't-uzb', name: 'Uzbekistan', code: 'UZB', flag_url: 'https://flagcdn.com/w320/uz.png', primary_color: '#00A598', secondary_color: '#FFFFFF' },
+  { id: 't-pan', name: 'Panama', code: 'PAN', flag_url: 'https://flagcdn.com/w320/pa.png', primary_color: '#DA121A', secondary_color: '#072357' },
+  { id: 't-nor', name: 'Norway', code: 'NOR', flag_url: 'https://flagcdn.com/w320/no.png', primary_color: '#BA0C2F', secondary_color: '#00205B' }
+];
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pfovxkppiygtenkbsmlc.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmb3Z4a3BwaXlndGVua2JzbWxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODc1OTAsImV4cCI6MjA5NjU2MzU5MH0.iDXhN5FSxIeAV8JyeFh4FQlg_nF85z42oNPRsBgMgqY';
+
+export const isMockEnabled = !supabaseUrl || !supabaseAnonKey;
+
+export const supabase = isMockEnabled 
+  ? null 
+  : createClient(supabaseUrl, supabaseAnonKey);
+
+// Force clear old local storage mock databases to ensure the new 48-team database and live matches load correctly
+if (typeof window !== 'undefined') {
+  try {
+    const storedTeamsStr = localStorage.getItem('wc_teams');
+    if (storedTeamsStr) {
+      const parsed = JSON.parse(storedTeamsStr);
+      if (Array.isArray(parsed)) {
+        if (parsed.length < 40) {
+          localStorage.removeItem('wc_teams');
+          localStorage.removeItem('wc_matches');
+          localStorage.removeItem('wc_streams');
+          localStorage.removeItem('wc_stats');
+          localStorage.removeItem('wc_events');
+          localStorage.removeItem('wc_providers');
+          localStorage.removeItem('wc_ads');
+          localStorage.removeItem('wc_notifications');
+          localStorage.removeItem('wc_db_version');
+        } else {
+          // Revert accidental overrides in local storage
+          let changed = false;
+          const updated = parsed.map((t: any) => {
+            const original = [...initialTeams, ...newQualifiedTeams].find(ot => ot.id === t.id);
+            if (original && (t.name === 'Bangladesh' || t.name === 'admin' || t.name !== original.name || t.flag_url !== original.flag_url)) {
+              changed = true;
+              return {
+                ...t,
+                name: original.name,
+                flag_url: original.flag_url
+              };
+            }
+            return t;
+          });
+          if (changed) {
+            localStorage.setItem('wc_teams', JSON.stringify(updated));
+            localStorage.removeItem('wc_matches'); // force matches refetch
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Failed to parse or clean mock db cache:', e);
+  }
+}
+
+const getStorageItem = (key: string, defaultValue: any) => {
+  if (typeof window === 'undefined') return defaultValue;
+  const item = localStorage.getItem(key);
+  if (!item) {
+    localStorage.setItem(key, JSON.stringify(defaultValue));
+    return defaultValue;
+  }
+  try {
+    return JSON.parse(item);
+  } catch {
+    return defaultValue;
+  }
+};
+
+const setStorageItem = (key: string, value: any) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(key, JSON.stringify(value));
+    window.dispatchEvent(new Event('storage'));
+  }
+};
+
+
 
 // Matches: LIVE is now Germany vs France, FINISHED is Spain vs England, Argentina vs Brazil is UPCOMING
 const initialMatches = [
@@ -331,20 +369,7 @@ export const mockDb = {
   }
 };
 
-export const newQualifiedTeams = [
-  { id: 't-cze', name: 'Czechia', code: 'CZE', flag_url: 'https://flagcdn.com/w320/cz.png', primary_color: '#11457E', secondary_color: '#D7141A' },
-  { id: 't-bih', name: 'Bosnia and Herzegovina', code: 'BIH', flag_url: 'https://flagcdn.com/w320/ba.png', primary_color: '#002F6C', secondary_color: '#FEC524' },
-  { id: 't-hai', name: 'Haiti', code: 'HAI', flag_url: 'https://flagcdn.com/w320/ht.png', primary_color: '#00209F', secondary_color: '#D21034' },
-  { id: 't-cuw', name: 'Curaçao', code: 'CUW', flag_url: 'https://flagcdn.com/w320/cw.png', primary_color: '#002B7F', secondary_color: '#F9E814' },
-  { id: 't-tun', name: 'Tunisia', code: 'TUN', flag_url: 'https://flagcdn.com/w320/tn.png', primary_color: '#E70013', secondary_color: '#FFFFFF' },
-  { id: 't-cpv', name: 'Cape Verde', code: 'CPV', flag_url: 'https://flagcdn.com/w320/cv.png', primary_color: '#002A8F', secondary_color: '#D21034' },
-  { id: 't-irq', name: 'Iraq', code: 'IRQ', flag_url: 'https://flagcdn.com/w320/iq.png', primary_color: '#C8102E', secondary_color: '#007A33' },
-  { id: 't-jor', name: 'Jordan', code: 'JOR', flag_url: 'https://flagcdn.com/w320/jo.png', primary_color: '#007A33', secondary_color: '#C8102E' },
-  { id: 't-cod', name: 'DR Congo', code: 'COD', flag_url: 'https://flagcdn.com/w320/cd.png', primary_color: '#007FFF', secondary_color: '#F9D616' },
-  { id: 't-uzb', name: 'Uzbekistan', code: 'UZB', flag_url: 'https://flagcdn.com/w320/uz.png', primary_color: '#00A598', secondary_color: '#FFFFFF' },
-  { id: 't-pan', name: 'Panama', code: 'PAN', flag_url: 'https://flagcdn.com/w320/pa.png', primary_color: '#DA121A', secondary_color: '#072357' },
-  { id: 't-nor', name: 'Norway', code: 'NOR', flag_url: 'https://flagcdn.com/w320/no.png', primary_color: '#BA0C2F', secondary_color: '#00205B' }
-];
+
 
 export function getWc2026GroupMatches() {
   const groups = [

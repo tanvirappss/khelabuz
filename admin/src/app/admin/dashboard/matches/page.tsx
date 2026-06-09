@@ -27,6 +27,9 @@ export default function MatchManagerPage() {
   const [editStatus, setEditStatus] = useState('UPCOMING');
   const [editTournament, setEditTournament] = useState('');
 
+  // Custom teams state toggle
+  const [isCustomTeams, setIsCustomTeams] = useState(false);
+
   // Team edit states (in Create Modal)
   const [teamAName, setTeamAName] = useState('');
   const [teamAFlag, setTeamAFlag] = useState('');
@@ -350,8 +353,8 @@ export default function MatchManagerPage() {
     if (!editMatch) return;
 
     try {
-      // 1. Update Team A details if changed
-      if (editMatch.team_a && (editMatch.team_a.name !== editTeamAName || editMatch.team_a.flag_url !== editTeamAFlag)) {
+      // 1. Update Team A details if changed (ONLY for custom teams)
+      if (editMatch.team_a_id?.startsWith('t-custom-') && editMatch.team_a && (editMatch.team_a.name !== editTeamAName || editMatch.team_a.flag_url !== editTeamAFlag)) {
         await saveTeamMutation.mutateAsync({
           ...editMatch.team_a,
           name: editTeamAName,
@@ -359,8 +362,8 @@ export default function MatchManagerPage() {
         });
       }
 
-      // 2. Update Team B details if changed
-      if (editMatch.team_b && (editMatch.team_b.name !== editTeamBName || editMatch.team_b.flag_url !== editTeamBFlag)) {
+      // 2. Update Team B details if changed (ONLY for custom teams)
+      if (editMatch.team_b_id?.startsWith('t-custom-') && editMatch.team_b && (editMatch.team_b.name !== editTeamBName || editMatch.team_b.flag_url !== editTeamBFlag)) {
         await saveTeamMutation.mutateAsync({
           ...editMatch.team_b,
           name: editTeamBName,
@@ -392,41 +395,64 @@ export default function MatchManagerPage() {
 
   const handleCreateMatch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!teamAId || !teamBId || teamAId === teamBId) {
-      alert('Select two different teams.');
-      return;
-    }
+    
+    let finalTeamAId = teamAId;
+    let finalTeamBId = teamBId;
 
-    // Save modified Team A details first
-    const currentTeamA = teams.find((t: any) => t.id === teamAId);
-    if (currentTeamA && (currentTeamA.name !== teamAName || currentTeamA.flag_url !== teamAFlag)) {
-      await saveTeamMutation.mutateAsync({
-        ...currentTeamA,
-        name: teamAName,
-        flag_url: teamAFlag
+    try {
+      if (isCustomTeams) {
+        if (!teamAName || !teamBName) {
+          alert('Please enter names for both custom teams.');
+          return;
+        }
+        // Generate random IDs for the custom teams
+        const customAId = 't-custom-' + Math.random().toString(36).substring(2, 9);
+        const customBId = 't-custom-' + Math.random().toString(36).substring(2, 9);
+        
+        // Save custom Team A
+        await saveTeamMutation.mutateAsync({
+          id: customAId,
+          name: teamAName,
+          code: teamAName.substring(0, 3).toUpperCase(),
+          flag_url: teamAFlag || 'https://flagcdn.com/w320/un.png'
+        });
+        
+        // Save custom Team B
+        await saveTeamMutation.mutateAsync({
+          id: customBId,
+          name: teamBName,
+          code: teamBName.substring(0, 3).toUpperCase(),
+          flag_url: teamBFlag || 'https://flagcdn.com/w320/un.png'
+        });
+
+        finalTeamAId = customAId;
+        finalTeamBId = customBId;
+      } else {
+        if (!teamAId || !teamBId || teamAId === teamBId) {
+          alert('Select two different teams.');
+          return;
+        }
+
+
+      }
+
+      await saveMatchMutation.mutateAsync({
+        team_a_id: finalTeamAId,
+        team_b_id: finalTeamBId,
+        stadium,
+        start_time: new Date(startTime).toISOString(),
+        status,
+        tournament,
+        team_a_score: 0,
+        team_b_score: 0
       });
+      
+      // Reset custom state
+      setIsCustomTeams(false);
+    } catch (err: any) {
+      console.error(err);
+      alert('Error creating match: ' + (err.message || err));
     }
-
-    // Save modified Team B details first
-    const currentTeamB = teams.find((t: any) => t.id === teamBId);
-    if (currentTeamB && (currentTeamB.name !== teamBName || currentTeamB.flag_url !== teamBFlag)) {
-      await saveTeamMutation.mutateAsync({
-        ...currentTeamB,
-        name: teamBName,
-        flag_url: teamBFlag
-      });
-    }
-
-    saveMatchMutation.mutate({
-      team_a_id: teamAId,
-      team_b_id: teamBId,
-      stadium,
-      start_time: new Date(startTime).toISOString(),
-      status,
-      tournament,
-      team_a_score: 0,
-      team_b_score: 0
-    });
   };
 
   const handleUpdateStatus = (match: any, newStatus: string) => {
@@ -629,10 +655,89 @@ export default function MatchManagerPage() {
       {/* CREATE MODAL */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-6 relative">
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-6 relative max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-black text-white uppercase tracking-wider mb-4">Create New Match</h2>
             <form onSubmit={handleCreateMatch} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              
+              {/* Custom teams selection toggle */}
+              <div className="flex items-center gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-850">
+                <input 
+                  type="checkbox" 
+                  id="isCustomTeams" 
+                  checked={isCustomTeams} 
+                  onChange={(e) => {
+                    setIsCustomTeams(e.target.checked);
+                    setTeamAId(''); setTeamBId('');
+                    setTeamAName(''); setTeamBName('');
+                    setTeamAFlag(''); setTeamBFlag('');
+                  }} 
+                  className="w-4 h-4 accent-emerald-500 cursor-pointer" 
+                />
+                <label htmlFor="isCustomTeams" className="text-xs font-bold text-slate-300 cursor-pointer select-none">
+                  Create Custom Teams (e.g., Cricket, Club Matches)
+                </label>
+              </div>
+
+              {isCustomTeams ? (
+                /* Custom Text Inputs for Team A and Team B */
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5 p-3.5 bg-slate-950/40 rounded-2xl border border-slate-850">
+                    <span className="text-xs font-black text-emerald-400 uppercase tracking-wider block">Custom Team A (Home)</span>
+                    <input 
+                      type="text" 
+                      value={teamAName} 
+                      onChange={(e) => setTeamAName(e.target.value)} 
+                      required 
+                      placeholder="e.g. Bangladesh" 
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white" 
+                    />
+                    <div className="space-y-1 pt-1.5">
+                      <label className="text-[10px] text-slate-500 font-bold block">Team Flag Upload</label>
+                      {teamAFlag && (
+                        <img src={teamAFlag} className="w-12 h-8 object-cover rounded border border-slate-800 mb-1" />
+                      )}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFlagUpload(file, (base64) => setTeamAFlag(base64));
+                        }}
+                        className="w-full text-[10px] text-slate-400 cursor-pointer" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 p-3.5 bg-slate-950/40 rounded-2xl border border-slate-850">
+                    <span className="text-xs font-black text-teal-400 uppercase tracking-wider block">Custom Team B (Away)</span>
+                    <input 
+                      type="text" 
+                      value={teamBName} 
+                      onChange={(e) => setTeamBName(e.target.value)} 
+                      required 
+                      placeholder="e.g. India" 
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white" 
+                    />
+                    <div className="space-y-1 pt-1.5">
+                      <label className="text-[10px] text-slate-500 font-bold block">Team Flag Upload</label>
+                      {teamBFlag && (
+                        <img src={teamBFlag} className="w-12 h-8 object-cover rounded border border-slate-800 mb-1" />
+                      )}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFlagUpload(file, (base64) => setTeamBFlag(base64));
+                        }}
+                        className="w-full text-[10px] text-slate-400 cursor-pointer" 
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Predefined World Cup dropdown selectors */
+                <div className="grid grid-cols-2 gap-4">
                 {/* Team A Custom Dropdown flag selector */}
                 <div className="space-y-1 relative">
                   <label className="text-xs text-slate-400 font-bold">Team A</label>
@@ -757,6 +862,7 @@ export default function MatchManagerPage() {
                   )}
                 </div>
               </div>
+              )}
               
               <div className="space-y-1">
                 <label className="text-xs text-slate-400 font-bold">Stadium</label>
@@ -801,9 +907,13 @@ export default function MatchManagerPage() {
                     value={editTeamAName} 
                     onChange={(e) => setEditTeamAName(e.target.value)} 
                     required 
+                    disabled={!editMatch.team_a_id?.startsWith('t-custom-')}
                     placeholder="Team A Name" 
-                    className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2.5 text-sm text-white" 
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2.5 text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed" 
                   />
+                  {!editMatch.team_a_id?.startsWith('t-custom-') && (
+                    <span className="text-[9px] text-slate-500 block mt-0.5">Predefined World Cup team names cannot be modified here. Use global Team Manager.</span>
+                  )}
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] text-slate-400 font-bold block">Flag Preview & Upload</label>
@@ -815,20 +925,22 @@ export default function MatchManagerPage() {
                       <input 
                         type="file" 
                         accept="image/*" 
+                        disabled={!editMatch.team_a_id?.startsWith('t-custom-')}
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
                             handleFlagUpload(file, (base64) => setEditTeamAFlag(base64));
                           }
                         }}
-                        className="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-900 file:text-slate-350 cursor-pointer" 
+                        className="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-900 file:text-slate-350 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" 
                       />
                       <input 
                         type="text" 
                         value={editTeamAFlag} 
                         onChange={(e) => setEditTeamAFlag(e.target.value)} 
+                        disabled={!editMatch.team_a_id?.startsWith('t-custom-')}
                         placeholder="Or flag URL" 
-                        className="w-full bg-slate-950 border border-slate-850 rounded-lg p-1 text-xs text-white" 
+                        className="w-full bg-slate-950 border border-slate-850 rounded-lg p-1 text-xs text-white disabled:opacity-50 disabled:cursor-not-allowed" 
                       />
                     </div>
                   </div>
@@ -856,9 +968,13 @@ export default function MatchManagerPage() {
                     value={editTeamBName} 
                     onChange={(e) => setEditTeamBName(e.target.value)} 
                     required 
+                    disabled={!editMatch.team_b_id?.startsWith('t-custom-')}
                     placeholder="Team B Name" 
-                    className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2.5 text-sm text-white" 
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2.5 text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed" 
                   />
+                  {!editMatch.team_b_id?.startsWith('t-custom-') && (
+                    <span className="text-[9px] text-slate-500 block mt-0.5">Predefined World Cup team names cannot be modified here. Use global Team Manager.</span>
+                  )}
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] text-slate-400 font-bold block">Flag Preview & Upload</label>
@@ -870,20 +986,22 @@ export default function MatchManagerPage() {
                       <input 
                         type="file" 
                         accept="image/*" 
+                        disabled={!editMatch.team_b_id?.startsWith('t-custom-')}
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
                             handleFlagUpload(file, (base64) => setEditTeamBFlag(base64));
                           }
                         }}
-                        className="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-900 file:text-slate-350 cursor-pointer" 
+                        className="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-900 file:text-slate-350 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" 
                       />
                       <input 
                         type="text" 
                         value={editTeamBFlag} 
                         onChange={(e) => setEditTeamBFlag(e.target.value)} 
+                        disabled={!editMatch.team_b_id?.startsWith('t-custom-')}
                         placeholder="Or flag URL" 
-                        className="w-full bg-slate-950 border border-slate-850 rounded-lg p-1 text-xs text-white" 
+                        className="w-full bg-slate-950 border border-slate-850 rounded-lg p-1 text-xs text-white disabled:opacity-50 disabled:cursor-not-allowed" 
                       />
                     </div>
                   </div>

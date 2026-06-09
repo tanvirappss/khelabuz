@@ -68,11 +68,11 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
             enableWorker: true,
             lowLatencyMode: true,
             backBufferLength: 0, // Disable backbuffer to save memory
-            maxBufferLength: 3,  // Buffer only 3 seconds (very fast download)
-            maxMaxBufferLength: 5,
-            maxBufferSize: 2 * 1024 * 1024, // Keep buffer small (2MB) for instant startup
-            liveSyncDurationCount: 1, // Play after ONLY 1 segment is loaded (Crucial for instant play!)
-            liveMaxLatencyDurationCount: 2,
+            maxBufferLength: 1.5,  // Buffer only 1.5 seconds for extreme loading speed
+            maxMaxBufferLength: 3, // Keep max buffer length low
+            maxBufferSize: 800 * 1024, // Cap buffer size to 800KB for instant chunk startup
+            liveSyncDurationCount: 0.5, // Play after ONLY 0.5 segments are loaded (Instant startup)
+            liveMaxLatencyDurationCount: 1.5,
             maxFragLookUpTolerance: 0.1,
             manifestLoadingMaxRetry: 10,
             manifestLoadingRetryDelay: 500,
@@ -81,7 +81,9 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
             fragLoadingMaxRetry: 10,
             fragLoadingRetryDelay: 500,
             stretchShortVideoTrack: true,
-            progressive: true
+            progressive: true,
+            testBandwidth: false, // Bypass initial bandwidth test delay
+            startLevel: 0 // Start playing lowest level first for instant loading, ABR will upgrade quality
           });
           hlsRef.current = hls;
           hls.loadSource(url);
@@ -266,6 +268,7 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
         autoPlay
         playsInline
         muted={isMuted}
+        preload="auto"
         className="w-full h-full object-contain cursor-pointer"
       />
 
