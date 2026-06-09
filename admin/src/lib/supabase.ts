@@ -349,14 +349,14 @@ export const newQualifiedTeams = [
 export function getWc2026GroupMatches() {
   const groups = [
     { id: 'A', name: 'Group A', teams: ['t-mex', 't-rsa', 't-kor', 't-cze'], venues: ['Estadio Azteca, Mexico City', 'Estadio Akron, Guadalajara', 'Estadio BBVA, Monterrey'] },
-    { id: 'B', name: 'Group B', teams: ['t-can', 't-bih', 't-qat', 't-sui'], venues: ['BMO Field, Toronto', 'BC Place, Vancouver', 'Gillette Stadium, Boston'] },
+    { id: 'B', name: 'Group B', teams: ['t-can', 't-bih', 't-qat', 't-sui'], venues: ['BMO Field, Toronto', 'BC Place, Vancouver', 'Gillette Stadium, Foxborough'] },
     { id: 'C', name: 'Group C', teams: ['t-bra', 't-mar', 't-hai', 't-sco'], venues: ['MetLife Stadium, East Rutherford', 'Lincoln Financial Field, Philadelphia', 'Lumen Field, Seattle'] },
     { id: 'D', name: 'Group D', teams: ['t-usa', 't-par', 't-aus', 't-tur'], venues: ['SoFi Stadium, Los Angeles', 'Lumen Field, Seattle', 'Levi\'s Stadium, San Francisco'] },
     { id: 'E', name: 'Group E', teams: ['t-ger', 't-cuw', 't-civ', 't-ecu'], venues: ['Hard Rock Stadium, Miami', 'Mercedes-Benz Stadium, Atlanta', 'NRG Stadium, Houston'] },
     { id: 'F', name: 'Group F', teams: ['t-ned', 't-jpn', 't-swe', 't-tun'], venues: ['AT&T Stadium, Dallas', 'Arrowhead Stadium, Kansas City', 'NRG Stadium, Houston'] },
-    { id: 'G', name: 'Group G', teams: ['t-bel', 't-egy', 't-irn', 't-nzl'], venues: ['Lincoln Financial Field, Philadelphia', 'Gillette Stadium, Boston', 'MetLife Stadium, East Rutherford'] },
+    { id: 'G', name: 'Group G', teams: ['t-bel', 't-egy', 't-irn', 't-nzl'], venues: ['Lincoln Financial Field, Philadelphia', 'Gillette Stadium, Foxborough', 'MetLife Stadium, East Rutherford'] },
     { id: 'H', name: 'Group H', teams: ['t-esp', 't-cpv', 't-ksa', 't-uru'], venues: ['Hard Rock Stadium, Miami', 'Mercedes-Benz Stadium, Atlanta', 'NRG Stadium, Houston'] },
-    { id: 'I', name: 'Group I', teams: ['t-fra', 't-sen', 't-irq', 't-nor'], venues: ['BC Place, Vancouver', 'Lumen Field, Seattle', 'SoFi Stadium, Los Angeles'] },
+    { id: 'I', name: 'Group I', teams: ['t-fra', 't-sen', 't-irq', 't-nor'], venues: ['MetLife Stadium, East Rutherford', 'Gillette Stadium, Foxborough', 'Lincoln Financial Field, Philadelphia', 'BMO Field, Toronto'] },
     { id: 'J', name: 'Group J', teams: ['t-arg', 't-alg', 't-aut', 't-jor'], venues: ['MetLife Stadium, East Rutherford', 'AT&T Stadium, Dallas', 'Lincoln Financial Field, Philadelphia'] },
     { id: 'K', name: 'Group K', teams: ['t-por', 't-cod', 't-uzb', 't-col'], venues: ['Arrowhead Stadium, Kansas City', 'Levi\'s Stadium, San Francisco', 'SoFi Stadium, Los Angeles'] },
     { id: 'L', name: 'Group L', teams: ['t-eng', 't-cro', 't-gha', 't-pan'], venues: ['AT&T Stadium, Dallas', 'Hard Rock Stadium, Miami', 'Mercedes-Benz Stadium, Atlanta'] }
@@ -388,7 +388,7 @@ export function getWc2026GroupMatches() {
           team_b_score: 0,
           status: 'UPCOMING',
           tournament: 'FIFA World Cup 2026 - Group I',
-          stadium: 'Gillette Stadium, Boston',
+          stadium: 'Gillette Stadium, Foxborough',
           start_time: '2026-06-16T22:00:00Z' // 6:00 PM ET -> 4:00 AM BST June 17
         },
         {
@@ -421,7 +421,7 @@ export function getWc2026GroupMatches() {
           team_b_score: 0,
           status: 'UPCOMING',
           tournament: 'FIFA World Cup 2026 - Group I',
-          stadium: 'Gillette Stadium, Boston',
+          stadium: 'Gillette Stadium, Foxborough',
           start_time: '2026-06-26T19:00:00Z' // 3:00 PM ET -> 1:00 AM BST June 27
         },
         {
