@@ -22,7 +22,7 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
   const [showControls, setShowControls] = useState(true);
   const [controlsTimeout, setControlsTimeout] = useState<any>(null);
   const [playbackQuality, setPlaybackQuality] = useState('Auto');
-  const [availableQualities, setAvailableQualities] = useState<string[]>([]);
+  const [availableQualities, setAvailableQualities] = useState<{ label: string; index: number }[]>([]);
   const hlsRef = useRef<any>(null);
 
   // Load stream
@@ -93,8 +93,14 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
             setIsBuffering(false);
             const levels = hls.levels;
             if (levels && levels.length > 0) {
-              const qualities = ['Auto', ...levels.map((l: any) => l.height + 'p')];
-              setAvailableQualities(qualities);
+              const list = [{ label: 'Auto', index: -1 }];
+              levels.forEach((l: any, idx: number) => {
+                const label = l.height ? l.height + 'p' : l.name || `Link ${idx + 1}`;
+                if (!list.some(item => item.label === label)) {
+                  list.push({ label, index: idx });
+                }
+              });
+              setAvailableQualities(list);
             }
             attemptPlay();
           });
@@ -240,28 +246,21 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
   };
 
   // Handle Quality Selection
-  const handleQualitySelect = (quality: string) => {
-    setPlaybackQuality(quality);
+  const handleQualitySelect = (label: string, index: number) => {
+    setPlaybackQuality(label);
     const hls = hlsRef.current;
     if (!hls) return;
-    if (quality === 'Auto') {
-      hls.currentLevel = -1;
-    } else {
-      const height = parseInt(quality);
-      const levelIdx = hls.levels.findIndex((l: any) => l.height === height);
-      if (levelIdx !== -1) {
-        hls.currentLevel = levelIdx;
-      }
-    }
+    hls.currentLevel = index;
   };
 
   return (
-    <div 
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => isPlaying && setShowControls(false)}
-      className="relative w-full h-full bg-black flex items-center justify-center select-none group/player overflow-hidden"
-    >
+    <div className="w-full flex flex-col">
+      <div 
+        ref={containerRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => isPlaying && !hasError && setShowControls(false)}
+        className="relative w-full aspect-video bg-black rounded-3xl overflow-hidden group select-none shadow-2xl border border-slate-900"
+      >
       <video
         ref={videoRef}
         onClick={togglePlay}
@@ -356,14 +355,14 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
               <div className="absolute right-0 mt-1 bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-lg py-1 shadow-xl hidden group-hover/quality:block z-50 min-w-[80px]">
                 {availableQualities.map((q) => (
                   <button
-                    key={q}
+                    key={q.label}
                     type="button"
-                    onClick={() => handleQualitySelect(q)}
+                    onClick={() => handleQualitySelect(q.label, q.index)}
                     className={`w-full text-left px-3 py-1.5 text-[9px] font-bold ${
-                      playbackQuality === q ? 'text-emerald-400 bg-slate-950' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      playbackQuality === q.label ? 'text-emerald-400 bg-slate-950' : 'text-slate-400 hover:text-white hover:bg-slate-800'
                     }`}
                   >
-                    {q}
+                    {q.label}
                   </button>
                 ))}
               </div>
@@ -440,6 +439,35 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
           </div>
         </div>
       </div>
+    </div>
+
+      {/* Quality Selection Bar below the player */}
+      {availableQualities.length > 0 && (
+        <div className="mt-3 p-3 bg-slate-950/60 border border-slate-900 rounded-2xl flex items-center justify-between gap-3">
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+            ⚙️ Quality / রেজোলিউশন সিলেক্ট করুন:
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {availableQualities.map((q) => {
+              const isActive = playbackQuality === q.label;
+              return (
+                <button
+                  key={q.label}
+                  type="button"
+                  onClick={() => handleQualitySelect(q.label, q.index)}
+                  className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border cursor-pointer ${
+                    isActive
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 border-transparent shadow shadow-emerald-500/10'
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                  }`}
+                >
+                  {q.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
