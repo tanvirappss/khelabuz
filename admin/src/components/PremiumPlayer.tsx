@@ -31,6 +31,16 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
     setHasError(false);
     setErrorMessage('');
     
+    // Set default fallback qualities so they are always visible
+    const defaultQualities = [
+      { label: 'Auto', index: -1 },
+      { label: '1080p', index: -1 },
+      { label: '720p', index: -1 },
+      { label: '480p', index: -1 }
+    ];
+    setAvailableQualities(defaultQualities);
+    setPlaybackQuality('Auto');
+    
     let hls: any = null;
     const video = videoRef.current;
     if (!video || !url) return;
@@ -100,7 +110,25 @@ export default function PremiumPlayer({ url, title, isLive = true }: PremiumPlay
                   list.push({ label, index: idx });
                 }
               });
-              setAvailableQualities(list);
+              
+              if (levels.length === 1) {
+                // If it's a single quality stream, display 1080p/720p/480p buttons and map to index 0
+                setAvailableQualities([
+                  { label: 'Auto', index: -1 },
+                  { label: '1080p', index: 0 },
+                  { label: '720p', index: 0 },
+                  { label: '480p', index: 0 }
+                ]);
+              } else {
+                setAvailableQualities(list);
+              }
+            } else {
+              setAvailableQualities([
+                { label: 'Auto', index: -1 },
+                { label: '1080p', index: -1 },
+                { label: '720p', index: -1 },
+                { label: '480p', index: -1 }
+              ]);
             }
             attemptPlay();
           });

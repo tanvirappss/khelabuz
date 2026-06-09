@@ -3,7 +3,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { mockDb, isMockEnabled } from '@/lib/supabase';
-import PremiumPlayer from '@/components/PremiumPlayer';
+import dynamic from 'next/dynamic';
+const PremiumPlayer = dynamic(() => import('@/components/PremiumPlayer'), {
+  ssr: false,
+  loading: () => (
+    <div className="relative w-full aspect-video bg-slate-900 rounded-3xl flex flex-col items-center justify-center border border-slate-800">
+      <div className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-3" />
+      <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest animate-pulse">
+        Loading Premium Player...
+      </span>
+    </div>
+  )
+});
 import { 
   Trophy, 
   Tv, 
@@ -81,7 +92,8 @@ export default function WebUserFrontend() {
         return data;
       }
       return mockDb.getSettings();
-    }
+    },
+    staleTime: 1000 * 60 * 10 // Cache site settings for 10 minutes
   });
 
   // Live TV & M3U Playlist States
@@ -172,7 +184,8 @@ export default function WebUserFrontend() {
         return data;
       }
       return [];
-    }
+    },
+    staleTime: 1000 * 60 * 2 // Cache streams for 2 minutes
   });
 
   // Handle M3U Fetching & Parsing via proxy
