@@ -18,22 +18,30 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      let loginEmail = email;
+      if (!email.includes('@')) {
+        loginEmail = `${email}@khelabuz.com`;
+      }
+
       if (isMockEnabled) {
         // Local sandbox mode
-        if ((email === 'admin@worldcup.com' || email === 'admin') && (password === 'admin123' || password === 'admin')) {
+        if (
+          (email === 'admin@worldcup.com' || email === 'admin' || email === '823163') && 
+          (password === 'admin123' || password === 'admin' || password === '823163')
+        ) {
           if (typeof window !== 'undefined') {
             localStorage.setItem('wc_admin_logged_in', 'true');
           }
           router.push('/admin/dashboard');
         } else {
-          setError('Invalid credentials. Hint: Use admin / admin');
+          setError('Invalid credentials. Hint: Use 823163 / 823163');
         }
       } else {
         // Real Supabase Auth
         const { supabase } = await import('@/lib/supabase');
         if (supabase) {
           const { error: authError } = await supabase.auth.signInWithPassword({
-            email,
+            email: loginEmail,
             password,
           });
           if (authError) throw authError;
@@ -86,7 +94,7 @@ export default function LoginPage() {
               </span>
               <input
                 type="text"
-                placeholder={isMockEnabled ? "admin" : "admin@worldcup.com"}
+                placeholder="823163"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -94,7 +102,7 @@ export default function LoginPage() {
               />
             </div>
           </div>
-
+ 
           <div className="space-y-2">
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block">
               Password
@@ -105,7 +113,7 @@ export default function LoginPage() {
               </span>
               <input
                 type="password"
-                placeholder={isMockEnabled ? "admin" : "••••••••"}
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -113,7 +121,7 @@ export default function LoginPage() {
               />
             </div>
           </div>
-
+ 
           <button
             type="submit"
             disabled={loading}
@@ -122,11 +130,11 @@ export default function LoginPage() {
             {loading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
-
+ 
         {isMockEnabled && (
           <div className="mt-6 border-t border-slate-800/80 pt-4 text-center">
             <p className="text-xs text-slate-500">
-              Demo: <span className="font-semibold text-slate-400">admin</span> / <span className="font-semibold text-slate-400">admin</span>
+              Demo: <span className="font-semibold text-slate-400">823163</span> / <span className="font-semibold text-slate-400">823163</span>
             </p>
           </div>
         )}
