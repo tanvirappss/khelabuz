@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { mockDb, isMockEnabled } from '@/lib/supabase';
 import { Plus, Trash2, Edit3, Tv, AlertCircle } from 'lucide-react';
+import PremiumPlayer from '@/components/PremiumPlayer';
 
 export default function LiveTvManagerPage() {
   const queryClient = useQueryClient();
@@ -264,7 +265,7 @@ export default function LiveTvManagerPage() {
                     />
                   );
                 } else {
-                  return <AdminVideoPreview url={url} />;
+                  return <PremiumPlayer url={url} title="Stream Preview" />;
                 }
               })()}
             </div>
@@ -272,62 +273,5 @@ export default function LiveTvManagerPage() {
         </div>
       )}
     </div>
-  );
-}
-
-import { useRef, useEffect } from 'react';
-
-function AdminVideoPreview({ url }: { url: string }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  
-  useEffect(() => {
-    let hls: any = null;
-    if (url && videoRef.current) {
-      const video = videoRef.current;
-      const isHls = url.includes('.m3u8') || url.includes('m3u8');
-      
-      if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = url;
-      } else if (isHls) {
-        import('hls.js').then((Hls) => {
-          if (Hls.default.isSupported()) {
-            hls = new Hls.default();
-            hls.loadSource(url);
-            hls.attachMedia(video);
-            hls.on(Hls.default.Events.ERROR, (event: any, data: any) => {
-              if (data.fatal) {
-                switch (data.type) {
-                  case Hls.default.ErrorTypes.NETWORK_ERROR:
-                    hls.startLoad();
-                    break;
-                  case Hls.default.ErrorTypes.MEDIA_ERROR:
-                    hls.recoverMediaError();
-                    break;
-                  default:
-                    video.src = url;
-                    break;
-                }
-              }
-            });
-          } else {
-            video.src = url;
-          }
-        });
-      } else {
-        video.src = url;
-      }
-    }
-    return () => {
-      if (hls) hls.destroy();
-    };
-  }, [url]);
-
-  return (
-    <video
-      ref={videoRef}
-      controls
-      autoPlay
-      className="w-full h-full object-contain"
-    />
   );
 }

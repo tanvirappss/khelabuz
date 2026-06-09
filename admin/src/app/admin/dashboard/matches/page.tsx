@@ -13,6 +13,20 @@ export default function MatchManagerPage() {
   const [isEventsModalOpen, setIsEventsModalOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
+  // Edit Match states
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editMatch, setEditMatch] = useState<any>(null);
+  const [editTeamAName, setEditTeamAName] = useState('');
+  const [editTeamAFlag, setEditTeamAFlag] = useState('');
+  const [editTeamBName, setEditTeamBName] = useState('');
+  const [editTeamBFlag, setEditTeamBFlag] = useState('');
+  const [editTeamAScore, setEditTeamAScore] = useState(0);
+  const [editTeamBScore, setEditTeamBScore] = useState(0);
+  const [editStadium, setEditStadium] = useState('');
+  const [editStartTime, setEditStartTime] = useState('');
+  const [editStatus, setEditStatus] = useState('UPCOMING');
+  const [editTournament, setEditTournament] = useState('');
+
   // Team edit states (in Create Modal)
   const [teamAName, setTeamAName] = useState('');
   const [teamAFlag, setTeamAFlag] = useState('');
@@ -300,6 +314,82 @@ export default function MatchManagerPage() {
     }
   });
 
+  const formatDatetimeLocal = (isoString: string) => {
+    if (!isoString) return '';
+    try {
+      const d = new Date(isoString);
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const year = d.getFullYear();
+      const month = pad(d.getMonth() + 1);
+      const day = pad(d.getDate());
+      const hours = pad(d.getHours());
+      const minutes = pad(d.getMinutes());
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch (e) {
+      return '';
+    }
+  };
+
+  const openEditModal = (match: any) => {
+    setEditMatch(match);
+    setEditTeamAName(match.team_a?.name || '');
+    setEditTeamAFlag(match.team_a?.flag_url || '');
+    setEditTeamBName(match.team_b?.name || '');
+    setEditTeamBFlag(match.team_b?.flag_url || '');
+    setEditTeamAScore(match.team_a_score || 0);
+    setEditTeamBScore(match.team_b_score || 0);
+    setEditStadium(match.stadium || '');
+    setEditStartTime(formatDatetimeLocal(match.start_time));
+    setEditStatus(match.status || 'UPCOMING');
+    setEditTournament(match.tournament || 'FIFA World Cup 2026');
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateMatchDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editMatch) return;
+
+    try {
+      // 1. Update Team A details if changed
+      if (editMatch.team_a && (editMatch.team_a.name !== editTeamAName || editMatch.team_a.flag_url !== editTeamAFlag)) {
+        await saveTeamMutation.mutateAsync({
+          ...editMatch.team_a,
+          name: editTeamAName,
+          flag_url: editTeamAFlag
+        });
+      }
+
+      // 2. Update Team B details if changed
+      if (editMatch.team_b && (editMatch.team_b.name !== editTeamBName || editMatch.team_b.flag_url !== editTeamBFlag)) {
+        await saveTeamMutation.mutateAsync({
+          ...editMatch.team_b,
+          name: editTeamBName,
+          flag_url: editTeamBFlag
+        });
+      }
+
+      // 3. Update Match details
+      await saveMatchMutation.mutateAsync({
+        id: editMatch.id,
+        team_a_id: editMatch.team_a_id,
+        team_b_id: editMatch.team_b_id,
+        stadium: editStadium,
+        start_time: new Date(editStartTime).toISOString(),
+        status: editStatus,
+        tournament: editTournament,
+        team_a_score: editTeamAScore,
+        team_b_score: editTeamBScore
+      });
+
+      alert("Match details updated successfully!");
+      setIsEditModalOpen(false);
+      setEditMatch(null);
+    } catch (err: any) {
+      console.error(err);
+      alert("Error updating match details: " + (err.message || err));
+    }
+  };
+
   const handleCreateMatch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!teamAId || !teamBId || teamAId === teamBId) {
@@ -509,12 +599,17 @@ export default function MatchManagerPage() {
                   </button>
                 )}
                 
+                <button onClick={() => openEditModal(match)} className="px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 text-xs font-semibold rounded-lg flex items-center gap-1.5">
+                  <Edit3 className="w-3.5 h-3.5 text-blue-400" />
+                  Edit Details
+                </button>
+                
                 <button onClick={() => openStatsModal(match)} className="px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 text-xs font-semibold rounded-lg flex items-center gap-1.5">
                   <Activity className="w-3.5 h-3.5" />
                   Edit Stats
                 </button>
 
-                <button onClick={() => { setSelectedMatch(match); setEventTeamId(match.team_a_id); setIsEventsModalOpen(true); }} className="px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 text-xs font-semibold rounded-lg flex items-center gap-1.5">
+                <button onClick={() => { setSelectedMatch(match); setEventTeamId(match.team_a_id); setIsEventsModalOpen(true); }} className="px-3 py-1.5 bg-slate-950 border border-slate-850 hover:border-slate-700 text-slate-300 text-xs font-semibold rounded-lg flex items-center gap-1.5">
                   <Zap className="w-3.5 h-3.5 text-amber-400" />
                   Add Event
                 </button>
@@ -683,6 +778,185 @@ export default function MatchManagerPage() {
               <div className="flex gap-3 justify-end pt-4">
                 <button type="button" onClick={() => setIsCreateModalOpen(false)} className="px-4 py-2.5 bg-slate-950 border border-slate-850 text-slate-400 text-xs font-bold rounded-xl">Cancel</button>
                 <button type="submit" className="px-4 py-2.5 bg-emerald-500 text-slate-950 text-xs font-bold rounded-xl">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT DETAILS MODAL */}
+      {isEditModalOpen && editMatch && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-6 relative max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg font-black text-white uppercase tracking-wider mb-4">Edit Match Details</h2>
+            <form onSubmit={handleUpdateMatchDetails} className="space-y-4">
+              
+              {/* Team A Details */}
+              <div className="p-4 bg-slate-950/40 rounded-2xl border border-slate-850 space-y-3">
+                <div className="text-xs font-black text-emerald-400 uppercase tracking-wider">Team A (Home)</div>
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold">Team Name</label>
+                  <input 
+                    type="text" 
+                    value={editTeamAName} 
+                    onChange={(e) => setEditTeamAName(e.target.value)} 
+                    required 
+                    placeholder="Team A Name" 
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2.5 text-sm text-white" 
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold block">Flag Preview & Upload</label>
+                  <div className="flex items-center gap-3">
+                    {editTeamAFlag && (
+                      <img src={editTeamAFlag} alt="Team A Flag" className="w-12 h-8 object-cover rounded shadow border border-slate-800" />
+                    )}
+                    <div className="flex-1 space-y-1">
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleFlagUpload(file, (base64) => setEditTeamAFlag(base64));
+                          }
+                        }}
+                        className="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-900 file:text-slate-350 cursor-pointer" 
+                      />
+                      <input 
+                        type="text" 
+                        value={editTeamAFlag} 
+                        onChange={(e) => setEditTeamAFlag(e.target.value)} 
+                        placeholder="Or flag URL" 
+                        className="w-full bg-slate-950 border border-slate-850 rounded-lg p-1 text-xs text-white" 
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold">Goals Scored</label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    value={editTeamAScore} 
+                    onChange={(e) => setEditTeamAScore(parseInt(e.target.value) || 0)} 
+                    required 
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2 text-sm text-white" 
+                  />
+                </div>
+              </div>
+
+              {/* Team B Details */}
+              <div className="p-4 bg-slate-950/40 rounded-2xl border border-slate-850 space-y-3">
+                <div className="text-xs font-black text-teal-400 uppercase tracking-wider">Team B (Away)</div>
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold">Team Name</label>
+                  <input 
+                    type="text" 
+                    value={editTeamBName} 
+                    onChange={(e) => setEditTeamBName(e.target.value)} 
+                    required 
+                    placeholder="Team B Name" 
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2.5 text-sm text-white" 
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold block">Flag Preview & Upload</label>
+                  <div className="flex items-center gap-3">
+                    {editTeamBFlag && (
+                      <img src={editTeamBFlag} alt="Team B Flag" className="w-12 h-8 object-cover rounded shadow border border-slate-800" />
+                    )}
+                    <div className="flex-1 space-y-1">
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleFlagUpload(file, (base64) => setEditTeamBFlag(base64));
+                          }
+                        }}
+                        className="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-900 file:text-slate-350 cursor-pointer" 
+                      />
+                      <input 
+                        type="text" 
+                        value={editTeamBFlag} 
+                        onChange={(e) => setEditTeamBFlag(e.target.value)} 
+                        placeholder="Or flag URL" 
+                        className="w-full bg-slate-950 border border-slate-850 rounded-lg p-1 text-xs text-white" 
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold">Goals Scored</label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    value={editTeamBScore} 
+                    onChange={(e) => setEditTeamBScore(parseInt(e.target.value) || 0)} 
+                    required 
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2 text-sm text-white" 
+                  />
+                </div>
+              </div>
+
+              {/* General Match Details */}
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-400 font-bold">Tournament</label>
+                    <input 
+                      type="text" 
+                      value={editTournament} 
+                      onChange={(e) => setEditTournament(e.target.value)} 
+                      required 
+                      className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2.5 text-sm text-white" 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-400 font-bold">Stadium</label>
+                    <input 
+                      type="text" 
+                      value={editStadium} 
+                      onChange={(e) => setEditStadium(e.target.value)} 
+                      required 
+                      className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2.5 text-sm text-white" 
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-400 font-bold">Date & Time</label>
+                    <input 
+                      type="datetime-local" 
+                      value={editStartTime} 
+                      onChange={(e) => setEditStartTime(e.target.value)} 
+                      onClick={(e) => (e.target as any).showPicker?.()}
+                      required 
+                      style={{ colorScheme: 'dark' }}
+                      className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2.5 text-sm text-white scheme-dark cursor-pointer animate-none" 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-400 font-bold">Status</label>
+                    <select 
+                      value={editStatus} 
+                      onChange={(e) => setEditStatus(e.target.value)} 
+                      className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2.5 text-sm text-white outline-none"
+                    >
+                      <option value="UPCOMING">UPCOMING</option>
+                      <option value="LIVE">LIVE</option>
+                      <option value="FINISHED">FINISHED</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4 border-t border-slate-800">
+                <button type="button" onClick={() => { setIsEditModalOpen(false); setEditMatch(null); }} className="px-4 py-2.5 bg-slate-950 border border-slate-850 text-slate-400 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
+                <button type="submit" className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black rounded-xl uppercase tracking-wider transition-all cursor-pointer">Save Changes</button>
               </div>
             </form>
           </div>
