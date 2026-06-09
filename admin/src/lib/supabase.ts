@@ -1,8 +1,8 @@
 // Supabase Client wrapper with Mock Fallback for local preview & offline capability
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pfovxkppiygtenkbsmlc.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmb3Z4a3BwaXlndGVua2JzbWxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODc1OTAsImV4cCI6MjA5NjU2MzU5MH0.iDXhN5FSxIeAV8JyeFh4FQlg_nF85z42oNPRsBgMgqY';
 
 export const isMockEnabled = !supabaseUrl || !supabaseAnonKey;
 
