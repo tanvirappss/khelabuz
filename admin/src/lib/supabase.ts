@@ -135,6 +135,30 @@ if (typeof window !== 'undefined') {
   } catch (e) {
     console.error('Failed to parse or clean mock db cache:', e);
   }
+
+  // Inject Sports Stream M3U playlist if missing in local storage cache
+  try {
+    const storedStreamsStr = localStorage.getItem('wc_streams');
+    if (storedStreamsStr) {
+      const parsed = JSON.parse(storedStreamsStr);
+      if (Array.isArray(parsed) && !parsed.some((s: any) => s.primary_url === '/sports_streams.m3u')) {
+        parsed.push({ 
+          id: 'c5da03f0-0002-4e3f-a94b-6004fae90002', 
+          match_id: null, 
+          name: 'Sports & Entertainment Stream', 
+          primary_url: '/sports_streams.m3u', 
+          backup_url_1: '', 
+          backup_url_2: '', 
+          backup_url_3: '', 
+          is_enabled: true, 
+          is_m3u: true 
+        });
+        localStorage.setItem('wc_streams', JSON.stringify(parsed));
+      }
+    }
+  } catch (err) {
+    console.error('Failed to inject sports playlist into cache:', err);
+  }
 }
 
 const getStorageItem = (key: string, defaultValue: any) => {
@@ -168,7 +192,8 @@ const initialMatches = [
 ];
 
 const initialStreams = [
-  { id: 'c5da03f0-0001-4e3f-a94b-6004fae90001', match_id: 'b4c9f2f0-0002-4d2e-983f-5993efd80002', name: 'Main Stream (HLS)', primary_url: 'https://playertest.longtailvideo.com/adaptive/oceans/oceans.m3u8', backup_url_1: 'https://demo.unified-streaming.com/k8s/live/stable/sintel.isml/.m3u8', backup_url_2: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8', backup_url_3: '', is_enabled: true }
+  { id: 'c5da03f0-0001-4e3f-a94b-6004fae90001', match_id: 'b4c9f2f0-0002-4d2e-983f-5993efd80002', name: 'Main Stream (HLS)', primary_url: 'https://playertest.longtailvideo.com/adaptive/oceans/oceans.m3u8', backup_url_1: 'https://demo.unified-streaming.com/k8s/live/stable/sintel.isml/.m3u8', backup_url_2: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8', backup_url_3: '', is_enabled: true },
+  { id: 'c5da03f0-0002-4e3f-a94b-6004fae90002', match_id: null, name: 'Sports & Entertainment Stream', primary_url: '/sports_streams.m3u', backup_url_1: '', backup_url_2: '', backup_url_3: '', is_enabled: true, is_m3u: true }
 ];
 
 const initialScoreUpdates = [

@@ -104,6 +104,7 @@ export default function WebUserFrontend() {
   const [isLoadingM3u, setIsLoadingM3u] = useState(false);
   const [m3uError, setM3uError] = useState('');
   const [selectedChannel, setSelectedChannel] = useState<M3UChannel | null>(null);
+  const [failedLogos, setFailedLogos] = useState<Record<string, boolean>>({});
   
   // Notification States
   const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
@@ -191,12 +192,17 @@ export default function WebUserFrontend() {
   // Handle M3U Fetching & Parsing via proxy
   useEffect(() => {
     if (selectedPlaylist) {
+      setFailedLogos({});
       if (selectedPlaylist.is_m3u) {
         setIsLoadingM3u(true);
         setM3uError('');
         setParsedChannels([]);
         
-        fetch(`/api/proxy-m3u?url=${encodeURIComponent(selectedPlaylist.primary_url)}`)
+        const fetchUrl = selectedPlaylist.primary_url.startsWith('http') 
+          ? `/api/proxy-m3u?url=${encodeURIComponent(selectedPlaylist.primary_url)}`
+          : selectedPlaylist.primary_url;
+
+        fetch(fetchUrl)
           .then((res) => {
             if (!res.ok) throw new Error("Failed to load playlist file.");
             return res.text();
@@ -620,10 +626,16 @@ export default function WebUserFrontend() {
                                       }`}
                                     >
                                       <div className="flex items-start gap-2.5">
-                                        {c.logo ? (
-                                          <img src={c.logo} className="w-8 h-8 object-contain rounded bg-slate-900 p-0.5 border border-slate-850" onError={(e) => { (e.target as any).src = ''; }} />
+                                        {c.logo && !failedLogos[c.url + '-' + c.name] ? (
+                                          <img 
+                                            src={c.logo} 
+                                            className="w-8 h-8 object-contain rounded bg-slate-900 p-0.5 border border-slate-850" 
+                                            onError={() => { 
+                                              setFailedLogos(prev => ({ ...prev, [c.url + '-' + c.name]: true }));
+                                            }} 
+                                          />
                                         ) : (
-                                          <div className="w-8 h-8 rounded bg-slate-950 border border-slate-850 text-slate-500 flex items-center justify-center font-bold text-xs uppercase">
+                                          <div className="w-8 h-8 rounded bg-slate-950 border border-slate-850 text-slate-500 flex items-center justify-center font-bold text-xs uppercase shrink-0">
                                             {c.name.substring(0, 2)}
                                           </div>
                                         )}
