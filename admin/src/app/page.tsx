@@ -359,20 +359,7 @@ export default function WebUserFrontend() {
 
   // Match streams load logic (simplified since PremiumPlayer manages its own video ref & HLS loader)
 
-  // Detect if the URL is an iframe/embed page (e.g. YouTube watch/embed page or twitch link or general HTTP pages)
-  const isIframeStream = activeStreamUrl && (
-    !activeStreamUrl.includes('.m3u8') && 
-    !activeStreamUrl.includes('.mp4') && 
-    !activeStreamUrl.includes('.webm') && 
-    !activeStreamUrl.includes('.ogg') &&
-    (activeStreamUrl.includes('embed') || 
-     activeStreamUrl.includes('iframe') || 
-     activeStreamUrl.includes('youtube.com') || 
-     activeStreamUrl.includes('youtu.be') || 
-     activeStreamUrl.includes('twitch.tv') ||
-     activeStreamUrl.includes('vimeo.com') ||
-     !activeStreamUrl.match(/\.(m3u8|mp4|webm|ogg)($|\?)/i))
-  );
+
 
   return (
     <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black p-4 md:p-8 flex flex-col justify-between">
@@ -778,23 +765,10 @@ export default function WebUserFrontend() {
                       {selectedTab === 3 ? (selectedChannel?.name || 'Live Channel Feed') : (selectedMatch?.status === 'LIVE' ? 'Live Match Stream Feed' : 'Match Stream Preview')}
                     </span>
                     <div className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-slate-950 shadow-xl group">
-                      {isIframeStream ? (
-                        <iframe
-                          src={activeStreamUrl.includes('youtube.com/watch?v=') 
-                            ? activeStreamUrl.replace('watch?v=', 'embed/') 
-                            : activeStreamUrl.includes('youtu.be/') 
-                            ? `https://www.youtube.com/embed/${activeStreamUrl.split('youtu.be/')[1]}`
-                            : activeStreamUrl}
-                          className="w-full h-full border-0"
-                          allowFullScreen
-                          allow="autoplay; encrypted-media; picture-in-picture"
-                        />
-                      ) : (
-                        <PremiumPlayer 
-                          url={activeStreamUrl} 
-                          title={selectedTab === 3 ? selectedChannel?.name : (selectedMatch ? `${selectedMatch.team_a?.name} vs ${selectedMatch.team_b?.name}` : 'Live Match')} 
-                        />
-                      )}
+                      <PremiumPlayer 
+                        url={activeStreamUrl} 
+                        title={selectedTab === 3 ? selectedChannel?.name : (selectedMatch ? `${selectedMatch.team_a?.name} vs ${selectedMatch.team_b?.name}` : 'Live Match')} 
+                      />
                     </div>
 
                     {/* Stream links switcher */}

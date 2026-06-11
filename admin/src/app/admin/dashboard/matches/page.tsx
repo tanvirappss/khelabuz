@@ -29,6 +29,10 @@ export default function MatchManagerPage() {
 
   // Custom teams state toggle
   const [isCustomTeams, setIsCustomTeams] = useState(false);
+  
+  // Stream mapping states
+  const [m3u8Url, setM3u8Url] = useState('');
+  const [editM3u8Url, setEditM3u8Url] = useState('');
 
   // Team edit states (in Create Modal)
   const [teamAName, setTeamAName] = useState('');
@@ -251,6 +255,37 @@ export default function MatchManagerPage() {
     }
   });
 
+  const { data: streams = [], refetch: refetchStreams } = useQuery({
+    queryKey: ['matches_page_streams'],
+    queryFn: async () => {
+      if (isMockEnabled) return mockDb.getStreams();
+      const { supabase } = await import('@/lib/supabase');
+      if (supabase) {
+        const { data, error } = await supabase.from('streams').select('*');
+        if (error) throw error;
+        return data;
+      }
+      return [];
+    }
+  });
+
+  const saveStreamMutation = useMutation({
+    mutationFn: async (streamData: any) => {
+      if (isMockEnabled) return mockDb.saveStream(streamData);
+      const { supabase } = await import('@/lib/supabase');
+      if (supabase) {
+        const { data, error } = await supabase.from('streams').upsert(streamData).select();
+        if (error) throw error;
+        return data[0];
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['streams_relocated'] });
+      queryClient.invalidateQueries({ queryKey: ['matches_page_streams'] });
+      refetchStreams();
+    }
+  });
+
   const saveMatchMutation = useMutation({
     mutationFn: async (matchData: any) => {
       if (isMockEnabled) return mockDb.saveMatch(matchData);
@@ -345,6 +380,10 @@ export default function MatchManagerPage() {
     setEditStartTime(formatDatetimeLocal(match.start_time));
     setEditStatus(match.status || 'UPCOMING');
     setEditTournament(match.tournament || 'FIFA World Cup 2026');
+
+    const existingStream = streams.find((s: any) => s.match_id === match.id);
+    setEditM3u8Url(existingStream ? existingStream.primary_url : '');
+
     setIsEditModalOpen(true);
   };
 
@@ -384,9 +423,34 @@ export default function MatchManagerPage() {
         team_b_score: editTeamBScore
       });
 
+      // 4. Update or Create Stream details
+      const existingStream = streams.find((s: any) => s.match_id === editMatch.id);
+      if (editM3u8Url) {
+        await saveStreamMutation.mutateAsync({
+          id: existingStream?.id || undefined,
+          match_id: editMatch.id,
+          name: existingStream?.name || 'Main Stream',
+          primary_url: editM3u8Url,
+          is_enabled: true,
+          is_m3u: false
+        });
+      } else if (existingStream) {
+        if (isMockEnabled) {
+          mockDb.deleteStream(existingStream.id);
+        } else {
+          const { supabase } = await import('@/lib/supabase');
+          if (supabase) {
+            await supabase.from('streams').delete().eq('id', existingStream.id);
+          }
+        }
+        queryClient.invalidateQueries({ queryKey: ['matches_page_streams'] });
+        refetchStreams();
+      }
+
       alert("Match details updated successfully!");
       setIsEditModalOpen(false);
       setEditMatch(null);
+      setEditM3u8Url('');
     } catch (err: any) {
       console.error(err);
       alert("Error updating match details: " + (err.message || err));
@@ -436,7 +500,7 @@ export default function MatchManagerPage() {
 
       }
 
-      await saveMatchMutation.mutateAsync({
+      const savedMatch = await saveMatchMutation.mutateAsync({
         team_a_id: finalTeamAId,
         team_b_id: finalTeamBId,
         stadium,
@@ -446,9 +510,20 @@ export default function MatchManagerPage() {
         team_a_score: 0,
         team_b_score: 0
       });
+
+      if (savedMatch && m3u8Url) {
+        await saveStreamMutation.mutateAsync({
+          match_id: savedMatch.id,
+          name: 'Main Stream',
+          primary_url: m3u8Url,
+          is_enabled: true,
+          is_m3u: false
+        });
+      }
       
       // Reset custom state
       setIsCustomTeams(false);
+      setM3u8Url('');
     } catch (err: any) {
       console.error(err);
       alert('Error creating match: ' + (err.message || err));
@@ -692,7 +767,7 @@ export default function MatchManagerPage() {
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white" 
                     />
                     <div className="space-y-1 pt-1.5">
-                      <label className="text-[10px] text-slate-500 font-bold block">Team Flag Upload</label>
+                      <label className="text-[10px] text-slate-500 font-bold block">Team Flag Upload & URL</label>
                       {teamAFlag && (
                         <img src={teamAFlag} className="w-12 h-8 object-cover rounded border border-slate-800 mb-1" />
                       )}
@@ -704,6 +779,13 @@ export default function MatchManagerPage() {
                           if (file) handleFlagUpload(file, (base64) => setTeamAFlag(base64));
                         }}
                         className="w-full text-[10px] text-slate-400 cursor-pointer" 
+                      />
+                      <input 
+                        type="text" 
+                        value={teamAFlag} 
+                        onChange={(e) => setTeamAFlag(e.target.value)} 
+                        placeholder="Or flag URL" 
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 mt-1 text-xs text-white" 
                       />
                     </div>
                   </div>
@@ -719,7 +801,7 @@ export default function MatchManagerPage() {
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white" 
                     />
                     <div className="space-y-1 pt-1.5">
-                      <label className="text-[10px] text-slate-500 font-bold block">Team Flag Upload</label>
+                      <label className="text-[10px] text-slate-500 font-bold block">Team Flag Upload & URL</label>
                       {teamBFlag && (
                         <img src={teamBFlag} className="w-12 h-8 object-cover rounded border border-slate-800 mb-1" />
                       )}
@@ -731,6 +813,13 @@ export default function MatchManagerPage() {
                           if (file) handleFlagUpload(file, (base64) => setTeamBFlag(base64));
                         }}
                         className="w-full text-[10px] text-slate-400 cursor-pointer" 
+                      />
+                      <input 
+                        type="text" 
+                        value={teamBFlag} 
+                        onChange={(e) => setTeamBFlag(e.target.value)} 
+                        placeholder="Or flag URL" 
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 mt-1 text-xs text-white" 
                       />
                     </div>
                   </div>
@@ -796,6 +885,13 @@ export default function MatchManagerPage() {
                         }}
                         className="w-full text-[10px] text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-900 file:text-slate-350 hover:file:bg-slate-800 cursor-pointer" 
                       />
+                      <input 
+                        type="text" 
+                        value={teamAFlag} 
+                        onChange={(e) => setTeamAFlag(e.target.value)} 
+                        placeholder="Or flag URL" 
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-[10px] text-white" 
+                      />
                     </div>
                   )}
                 </div>
@@ -858,6 +954,13 @@ export default function MatchManagerPage() {
                         }}
                         className="w-full text-[10px] text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-900 file:text-slate-350 hover:file:bg-slate-800 cursor-pointer" 
                       />
+                      <input 
+                        type="text" 
+                        value={teamBFlag} 
+                        onChange={(e) => setTeamBFlag(e.target.value)} 
+                        placeholder="Or flag URL" 
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-[10px] text-white" 
+                      />
                     </div>
                   )}
                 </div>
@@ -879,6 +982,17 @@ export default function MatchManagerPage() {
                   required 
                   style={{ colorScheme: 'dark' }}
                   className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2.5 text-sm cursor-pointer outline-none focus:border-emerald-500 text-white scheme-dark" 
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400 font-bold">m3u8 Link (Stream URL)</label>
+                <input 
+                  type="url" 
+                  value={m3u8Url} 
+                  onChange={(e) => setM3u8Url(e.target.value)} 
+                  placeholder="https://example.com/live.m3u8" 
+                  className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2.5 text-sm text-white" 
                 />
               </div>
               <div className="flex gap-3 justify-end pt-4">
@@ -1069,6 +1183,17 @@ export default function MatchManagerPage() {
                       <option value="FINISHED">FINISHED</option>
                     </select>
                   </div>
+                </div>
+
+                <div className="space-y-1 pt-1">
+                  <label className="text-xs text-slate-400 font-bold">m3u8 Link (Stream URL)</label>
+                  <input 
+                    type="url" 
+                    value={editM3u8Url} 
+                    onChange={(e) => setEditM3u8Url(e.target.value)} 
+                    placeholder="https://example.com/live.m3u8" 
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl p-2.5 text-sm text-white" 
+                  />
                 </div>
               </div>
 
