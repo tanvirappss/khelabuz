@@ -27,8 +27,10 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
 import com.worldcup2026.liveapp.presentation.theme.EmeraldAccent
 import com.worldcup2026.liveapp.presentation.theme.SlateBg
@@ -60,12 +62,32 @@ fun StreamingScreen(
         viewModel.loadStreams(matchId)
     }
 
-    // Initialize ExoPlayer
+    // Initialize ExoPlayer with Low-Latency & Fast-Startup Configurations
     val exoPlayer = remember {
-        ExoPlayer.Builder(context).build().apply {
-            playWhenReady = true
-            repeatMode = Player.REPEAT_MODE_OFF
+        val loadControl = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                10_000, // minBufferMs
+                25_000, // maxBufferMs
+                800,    // bufferForPlaybackMs (low threshold for instant startup)
+                1_200   // bufferForPlaybackAfterRebufferMs (fast recovery)
+            )
+            .setPrioritizeTimeOverSizeThresholds(true)
+            .build()
+
+        val trackSelector = DefaultTrackSelector(context).apply {
+            setParameters(
+                buildUponParameters()
+                    .setForceLowestBitrate(true) // Start low for instant play, ABR will adapt up
+            )
         }
+
+        ExoPlayer.Builder(context)
+            .setLoadControl(loadControl)
+            .setTrackSelector(trackSelector)
+            .build().apply {
+                playWhenReady = true
+                repeatMode = Player.REPEAT_MODE_OFF
+            }
     }
 
     // Release player on dispose
@@ -80,13 +102,37 @@ fun StreamingScreen(
     
     LaunchedEffect(activeUrl) {
         if (!activeUrl.isNullOrBlank()) {
+            // Parse host to set correct Origin and Referer to bypass CDN hotlink protections
+            val uri = android.net.Uri.parse(activeUrl)
+            val hostname = uri.host ?: ""
+            val origin = if (hostname.isNotEmpty()) "https://$hostname" else ""
+
             val dataSourceFactory = DefaultHttpDataSource.Factory()
+                .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 .setAllowCrossProtocolRedirects(true)
-                .setConnectTimeoutMs(10000)
-                .setReadTimeoutMs(10000)
+                .setConnectTimeoutMs(3000) // Fast 3s timeout for responsive failover
+                .setReadTimeoutMs(3000)
+                .setDefaultRequestProperties(buildMap {
+                    put("Accept", "*/*")
+                    put("Cache-Control", "no-cache")
+                    if (origin.isNotEmpty()) {
+                        put("Origin", origin)
+                        put("Referer", "$origin/")
+                    }
+                })
             
+            val liveConfig = MediaItem.LiveConfiguration.Builder()
+                .setTargetOffsetMs(8_000) // Safe live-edge offset
+                .build()
+
+            val mediaItem = MediaItem.Builder()
+                .setUri(activeUrl)
+                .setLiveConfiguration(liveConfig)
+                .build()
+
             val hlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
-                .createMediaSource(MediaItem.fromUri(activeUrl))
+                .setAllowChunklessPreparation(true) // Skip chunk parsing on prepare for instant start
+                .createMediaSource(mediaItem)
             
             exoPlayer.setMediaSource(hlsMediaSource)
             exoPlayer.prepare()
